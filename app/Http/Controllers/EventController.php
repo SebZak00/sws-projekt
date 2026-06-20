@@ -41,7 +41,6 @@ class EventController extends Controller
 
         return back()->with('success', 'Zapisano pomyślnie!');
     }
-    // ... poprzedni kod ...
 
     // Wyświetla formularz dodawania wydarzenia
     public function create()

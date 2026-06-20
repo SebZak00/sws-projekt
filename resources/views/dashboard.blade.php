@@ -25,11 +25,21 @@
             <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
                 <div class="p-6 text-gray-900">
                     <h3 class="text-lg font-bold mb-4">Lista nadchodzących wydarzeń</h3>
-                    <div class="mb-4">
-                        <a href="{{ route('events.create') }}" class="bg-green-500 hover:bg-green-700 text-black font-bold py-2 px-4 rounded">
-                            + Dodaj Wydarzenie
-                        </a>
-                    </div>
+                    @if(auth()->user()->role === 'organizator')
+                        <div class="mb-4">
+                            <a href="{{ route('events.create') }}" class="bg-green-500 hover:bg-green-700 text-black font-bold py-2 px-4 rounded">
+                                + Dodaj Wydarzenie
+                            </a>
+                        </div>
+                    @endif
+
+                    @if(auth()->user()->role === 'admin')
+                        <div class="mb-4">
+                            <a href="{{ route('users.index') }}" class="bg-purple-500 hover:bg-purple-700 text-black font-bold py-2 px-4 rounded">
+                                Zarządzaj Użytkownikami (Admin)
+                            </a>
+                        </div>
+                    @endif
                     <table class="min-w-full divide-y divide-gray-200">
                         <thead class="bg-gray-50">
                             <tr>

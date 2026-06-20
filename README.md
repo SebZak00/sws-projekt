@@ -1,6 +1,6 @@
 # System Wydarzeń Sportowych (SWS)
 
-Projekt systemu informatycznego do zarządzania wydarzeniami sportowymi, realizowany w ramach przedmiotu "Projekt Systemu". Aplikacja pozwala na bezpieczną rejestrację użytkowników, tworzenie wydarzeń sportowych oraz zapisywanie się na nie z uwzględnieniem limitu miejsc.
+Projekt systemu informatycznego do zarządzania wydarzeniami sportowymi, realizowany w ramach przedmiotu "Projekt Systemu". Aplikacja posiada wbudowany system ról (RBAC) i pozwala na bezpieczną rejestrację użytkowników, zarządzanie uprawnieniami (Admin), tworzenie wydarzeń sportowych (Organizator) oraz zapisywanie się na nie z uwzględnieniem limitu miejsc (Użytkownik).
 
 ## Technologie i Architektura
 Projekt został zrealizowany w oparciu o architekturę MVC (Model-View-Controller).
