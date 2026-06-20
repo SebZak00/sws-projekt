@@ -2,14 +2,14 @@
 
 Projekt systemu informatycznego do zarządzania wydarzeniami sportowymi, realizowany w ramach przedmiotu "Projekt Systemu". Aplikacja pozwala na bezpieczną rejestrację użytkowników, tworzenie wydarzeń sportowych oraz zapisywanie się na nie z uwzględnieniem limitu miejsc.
 
-## 🛠 Technologie i Architektura
+## Technologie i Architektura
 Projekt został zrealizowany w oparciu o architekturę MVC (Model-View-Controller).
 * **Backend:** PHP 8.2, Laravel 11
 * **Frontend:** Blade, Tailwind CSS (pakiet Laravel Breeze)
 * **Baza danych:** MySQL (z wykorzystaniem mechanizmu migracji oraz Eloquent ORM)
 * **Kontrola wersji i CI/CD:** Git, GitHub Actions
 
-## 🚀 Uruchomienie lokalne (Środowisko deweloperskie)
+## Uruchomienie lokalne (Środowisko deweloperskie)
 
 Aby uruchomić projekt na własnym komputerze, postępuj zgodnie z poniższymi krokami:
 
@@ -43,7 +43,7 @@ Aplikacja będzie dostępna pod adresem: http://127.0.0.1:8000
 
 ---
 
-## 🌍 Uruchomienie w środowisku produkcyjnym (Instrukcja wdrożenia)
+## Uruchomienie w środowisku produkcyjnym (Instrukcja wdrożenia)
 
 Wdrożenie aplikacji na serwerze produkcyjnym wymaga zastosowania dodatkowych kroków optymalizacyjnych i polityki bezpieczeństwa:
 
@@ -67,5 +67,5 @@ Wdrożenie aplikacji na serwerze produkcyjnym wymaga zastosowania dodatkowych kr
    npm install
    npm run build
 
-## 📄 Licencja
+## Licencja
 Projekt udostępniany na darmowej licencji **MIT**.
