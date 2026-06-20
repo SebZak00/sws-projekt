@@ -13,15 +13,15 @@ Projekt został zrealizowany w oparciu o architekturę MVC (Model-View-Controlle
 
 Aby uruchomić projekt na własnym komputerze, postępuj zgodnie z poniższymi krokami:
 
-1. Sklonuj repozytorium do wybranego folderu:
+1. Sklonuj repozytorium do wybranego folderu:  
    git clone https://github.com/SebZak00/sws-projekt.git  
    cd sws-projekt  
 
-2. Zainstaluj niezbędne pakiety PHP oraz Node.js:
+2. Zainstaluj niezbędne pakiety PHP oraz Node.js:  
    composer install  
    npm install && npm run build  
 
-3. Skonfiguruj plik środowiskowy:
+3. Skonfiguruj plik środowiskowy:  
    * Skopiuj plik `.env.example` i zmień jego nazwę na `.env`.  
    * Wygeneruj unikalny klucz aplikacji:  
      php artisan key:generate  
@@ -33,11 +33,11 @@ Aby uruchomić projekt na własnym komputerze, postępuj zgodnie z poniższymi k
      DB_USERNAME=root  
      DB_PASSWORD=  
 
-4. Uruchom migracje, aby zbudować strukturę bazy danych:
-   php artisan migrate
+4. Uruchom migracje, aby zbudować strukturę bazy danych:  
+   php artisan migrate  
 
-5. Uruchom wbudowany serwer deweloperski:
-   php artisan serve
+5. Uruchom wbudowany serwer deweloperski:  
+   php artisan serve  
    
 Aplikacja będzie dostępna pod adresem: http://127.0.0.1:8000
 
