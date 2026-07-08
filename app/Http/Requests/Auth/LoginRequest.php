@@ -38,11 +38,19 @@ class LoginRequest extends FormRequest
      *
      * @throws ValidationException
      */
-    public function authenticate(): void
+   public function authenticate(): void
     {
         $this->ensureIsNotRateLimited();
 
-        if (! Auth::attempt($this->only('email', 'password'), $this->boolean('remember'))) {
+        $pepper = env('APP_PEPPER');
+        
+        $pepperedPassword = hash_hmac('sha256', $this->password, $pepper);
+
+        if (! Auth::attempt([
+            'email' => $this->email, 
+            'password' => $pepperedPassword
+        ], $this->boolean('remember'))) {
+            
             RateLimiter::hit($this->throttleKey());
 
             throw ValidationException::withMessages([

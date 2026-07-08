@@ -13,11 +13,16 @@ class RoleMiddleware
      *
      * @param  Closure(Request): (Response)  $next
      */
-    public function handle(Request $request, Closure $next, ...$roles)
-{
-    if (!in_array(auth()->user()->role, $roles)) {
-        abort(403, 'Odmowa dostępu. Brak odpowiednich uprawnień.');
+    public function handle(Request $request, Closure $next, ...$roles): Response
+    {
+        if (!auth()->check()) {
+            abort(403, 'Odmowa dostępu. Musisz być zalogowany.');
+        }
+
+        if (!in_array(auth()->user()->role, $roles)) {
+            abort(403, 'Odmowa dostępu. Brak odpowiednich uprawnień.');
+        }
+
+        return $next($request);
     }
-    return $next($request);
-}
 }

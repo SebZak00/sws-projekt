@@ -24,9 +24,12 @@ class ConfirmablePasswordController extends Controller
      */
     public function store(Request $request): RedirectResponse
     {
+        $pepper = env('APP_PEPPER');
+        $pepperedPassword = hash_hmac('sha256', $request->password, $pepper);
+
         if (! Auth::guard('web')->validate([
             'email' => $request->user()->email,
-            'password' => $request->password,
+            'password' => $pepperedPassword,
         ])) {
             throw ValidationException::withMessages([
                 'password' => __('auth.password'),

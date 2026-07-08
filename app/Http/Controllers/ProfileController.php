@@ -43,7 +43,13 @@ class ProfileController extends Controller
     public function destroy(Request $request): RedirectResponse
     {
         $request->validateWithBag('userDeletion', [
-            'password' => ['required', 'current_password'],
+            'password' => ['required', function ($attribute, $value, $fail) use ($request) {
+                $pepper = env('APP_PEPPER');
+                $pepperedPassword = hash_hmac('sha256', $value, $pepper);
+                if (!\Illuminate\Support\Facades\Hash::check($pepperedPassword, $request->user()->password)) {
+                    $fail(__('The provided password does not match your current password.'));
+                }
+            }],
         ]);
 
         $user = $request->user();
@@ -55,6 +61,6 @@ class ProfileController extends Controller
         $request->session()->invalidate();
         $request->session()->regenerateToken();
 
-        return Redirect::to('/');
+        return redirect('/');
     }
 }

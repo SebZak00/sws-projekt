@@ -39,8 +39,22 @@ W systemie wyróżniamy 3 główne role (aktorów):
 * **Użytkownik (Zawodnik):** Podstawowa rola po rejestracji. Przegląda wydarzenia, zapisuje się i rezygnuje z udziału.
 
 ## 8. Przypadki użycia [SŻ]
+**Zidentyfikowane w systemie przypadki użycia (Use Cases):**
+1. **Rejestracja konta Zawodnika:** Wprowadzenie danych, walidacja unikalności adresu e-mail oraz bezpieczne hashowanie hasła przed zapisem.
+2. **Uwierzytelnianie (Logowanie):** Bezpieczne logowanie użytkownika na podstawie danych uwierzytelniających i nawiązanie zaszyfrowanej sesji.
+3. **Zarządzanie profilem:** Edycja danych osobowych przez użytkownika oraz możliwość bezpiecznej zmiany hasła.
+4. **Tworzenie Wydarzenia:** Konfiguracja nowych zawodów sportowych przez Organizatora z określeniem parametrów takich jak nazwa, termin oraz rygorystyczny limit miejsc.
+5. **Modyfikacja Wydarzenia:** Edycja szczegółów istniejącego wydarzenia przez Organizatora, w tym zarządzanie ewentualnym zwiększeniem puli miejsc.
+6. **Anulowanie Wydarzenia:** Skasowanie wydarzenia z bazy, powiązane z ewentualnym ostrzeżeniem o przypisanych już uczestnikach.
+7. **Przeglądanie katalogu:** Dostęp do interaktywnej, responsywnej listy nadchodzących wydarzeń sportowych dla wszystkich zalogowanych ról.
+8. **Zapis na Wydarzenie (Partycypacja):** Deklaracja udziału przez Zawodnika, połączona z natychmiastową weryfikacją w czasie rzeczywistym, czy limit miejsc nie został wyczerpany.
+9. **Rezygnacja z Wydarzenia:** Anulowanie własnego startu przez Zawodnika, co skutkuje automatycznym zwolnieniem blokady miejsca na liście startowej.
+10. **Zarządzanie Rolami (RBAC):** Pełna administracja uprawnieniami przez konto Administratora – możliwość elastycznego nadawania i odbierania uprawnień Organizatora.
+
+*Poniżej zamieszczono diagram oraz scenariusz dla wybranego przypadku użycia.*
+
 **a) Diagram Przypadków Użycia**
-![Diagram Przypadków Użycia](img/diagram_przypadkow_uzycia.png)
+![Diagram Przypadków Użycia](img/diagram_przypadkow_uzycia2.png)
 
 **b) Scenariusz (Dla: Tworzenie nowego wydarzenia)**
 * **Aktor Główny:** Organizator
@@ -54,46 +68,115 @@ W systemie wyróżniamy 3 główne role (aktorów):
 * **Scenariusz alternatywny:** W kroku 4, jeśli dane są błędne (np. ujemny limit), system przerywa operację i wyświetla czerwone komunikaty o błędach nad formularzem.
 
 ## 9. Baza danych (Diagram struktury danych) [SŻ]
+
+### 9a. Model koncepcyjny
+W warstwie koncepcyjnej system operuje na trzech głównych encjach biznesowych, które odwzorowują logikę działania aplikacji:
+1. **Użytkownik (User):** Reprezentuje każdą zarejestrowaną w systemie osobę (Zawodnika, Organizatora lub Administratora).
+2. **Wydarzenie (Event):** Reprezentuje zorganizowane zawody sportowe, posiadające określone ramy czasowe oraz limitowaną pojemność (liczbę miejsc).
+3. **Rejestracja (Registration):** Encja o charakterze asocjacyjnym, reprezentująca fakt zgłoszenia się konkretnego użytkownika na dane wydarzenie.
+
+Pomiędzy encją `Użytkownik` a encją `Wydarzenie` występuje relacja typu **wiele-do-wielu (M:N)** – jeden zawodnik może wziąć udział w wielu niezależnych wydarzeniach sportowych, natomiast w jednym wydarzeniu może uczestniczyć wielu zawodników. W celu poprawnej implementacji w relacyjnej bazie danych, relacja ta została przełamana za pomocą encji pośredniej `Rejestracja` na dwie niezależne relacje typu **jeden-do-wielu (1:N)**.
+
+### 9b. Model logiczny
+Model logiczny definiuje strukturę tabel, klucze główne (Primary Keys), klucze obce (Foreign Keys) oraz relacje strukturalne, pozostając niezależnym od konkretnego silnika bazodanowego. 
+
+*Poniżej przedstawiono logiczny schemat związków encji (ERD) dla Systemu Wydarzeń Sportowych:*
 ![Diagram ERD](img/diagram_erd.png)
 
-## 10. Diagramy Sekwencji [SŻ]
-**Zidentyfikowane w systemie diagramy sekwencji:**
-1. Tworzenie nowego wydarzenia sportowego.
-2. Logowanie i autoryzacja użytkownika.
-3. Proces zapisu zawodnika na wydarzenie z weryfikacją limitu.
-4. Zmiana roli użytkownika przez Administratora.
+### 9c. Model fizyczny
+Model fizyczny stanowi bezpośrednią specyfikację techniczną wdrożoną w relacyjnym systemie zarządzania bazą danych **MySQL 8.0**. 
 
-*Poniżej zamieszczono 1 wybrany diagram dla procesu: Tworzenie nowego wydarzenia sportowego*
+1. **Silnik bazy danych:** Wszystkie tabele wykorzystują produkcyjny silnik **InnoDB**. Gwarantuje on pełne wsparcie dla transakcyjności (ACID), co jest kluczowe podczas jednoczesnych zapisów wielu użytkowników na to samo wydarzenie (blokowanie rekordów i zapobieganie przekroczeniu limitu miejsc).
+2. **Kodowanie znaków:** Zastosowano zestaw znaków **`utf8mb4`** wraz z metodą porównywania **`utf8mb4_unicode_ci`**. Zapewnia to bezproblemowe przechowywanie polskich znaków diakrytycznych oraz emotikonów w nazwach wydarzeń czy profilach użytkowników.
+3. **Typy danych i optymalizacja:**
+   * Klucze główne zostały zdefiniowane jako **`BIGINT UNSIGNED AUTO_INCREMENT`** (8 bajtów), co zapewnia optymalną wydajność indeksowania oraz zapobiega wyczerpaniu zakresu identyfikatorów.
+   * Adres e-mail użytkownika posiada nałożony indeks unikalności (**`UNIQUE`**), co przyspiesza operację wyszukiwania podczas logowania i uniemożliwia rejestrację dwóch kont na ten sam e-mail.
+4. **Integralność referencyjna (Więzy obcych kluczy):**
+   * Tabela pośrednia `registrations` posiada fizycznie zdefiniowane klucze obce: `user_id` (odwołujący się do `users.id`) oraz `event_id` (odwołujący się do `events.id`).
+   * W obu przypadkach zastosowano regułę kaskadową **`ON DELETE CASCADE`**. Oznacza to, że jeśli konto użytkownika zostanie usunięte z systemu lub Organizator odwoła (usunie) wydarzenie sportowe, system bazodanowy automatycznie i natychmiastowo wyczyści wszystkie powiązane rekordy rejestracji, zapobiegając powstawaniu tzw. rekordów sierocych (osieroconych kluczy obcych) i dbając o spójność danych na poziomie sprzętowym.
+
+## 10. Diagramy Sekwencji [SŻ]
+**Zidentyfikowane w systemie diagramy sekwencji dla kluczowych procesów interakcji:**
+1. **Sekwencja uwierzytelniania HTTP:** Od wysłania danych formularza przez przeglądarkę, weryfikację w AuthController, sprawdzenie hasha w bazie, aż po wygenerowanie ciasteczka sesyjnego.
+2. **Sekwencja tworzenia wydarzenia:** Przepływ danych z widoku organizatora, przez middleware sprawdzający rolę, walidację żądania, aż po instrukcję `INSERT` z użyciem ORM.
+3. **Sekwencja bezpiecznego zapisu zawodnika:** Cykl sprawdzania dostępności miejsc z użyciem mechanizmów transakcyjnych bazy danych (zapobieganie zapisom ponad limit w tej samej milisekundzie) i utworzenie rekordu Pivot.
+4. **Sekwencja zarządzania rolą użytkownika:** Żądanie modyfikacji wysłane przez panel Administratora, aktualizacja statusu konta docelowego w tabeli `users` i zwrotna odpowiedź serwera.
+5. **Sekwencja generowania pulpitu (Dashboard):** Wysłanie żądania GET, routing do właściwego kontrolera, pobranie i przefiltrowanie kolekcji wydarzeń z bazy, a następnie wyrenderowanie widoku Blade.
+6. **Sekwencja rezygnacji zawodnika:** Zainicjowanie akcji `detach()`, odszukanie relacji w tabeli `registrations`, usunięcie wpisu i modyfikacja stanu wyświetlania przycisków na widoku.
+7. **Sekwencja odzyskiwania hasła:** Rejestracja żądania resetu, wygenerowanie jednorazowego, zabezpieczonego tokenu i zapis w dedykowanej tabeli resetów.
+8. **Sekwencja wylogowywania (Destroy Session):** Żądanie zakończenia sesji użytkownika, usunięcie powiązanych z nią plików na serwerze i ostateczne przekierowanie na ekran powitalny.
+9. **Sekwencja obsługi błędu braku autoryzacji (403):** Próba nieautoryzowanego dostępu przez użytkownika (np. do panelu admina), przechwycenie żądania na poziomie warstwy Middleware i zwrócenie komunikatu błędu.
+10. **Sekwencja rejestracji nowego konta:** Przesłanie danych z formularza, sanityzacja danych wejściowych (zabezpieczenie XSS/SQL Injection), wygenerowanie Sól/Pieprz, oraz odpowiedź HTTP z kodem 201 (Created).
+
+*Poniżej zamieszczono 1 wybrany diagram dla procesu: Tworzenie nowego wydarzenia sportowego.*
 ![Diagram Sekwencji](img/diagram_sekwencji.png)
 
 ## 11. Diagramy Aktywności [SŻ]
-**Zidentyfikowane w systemie diagramy aktywności:**
-1. Nawigacja po dashboardzie i adaptacyjne ukrywanie przycisków w zależności od roli.
-2. Proces wypełniania i walidacji formularza wydarzenia.
-3. Ścieżka rejestracji nowego konta w systemie.
+**Zidentyfikowane w systemie diagramy aktywności dla logiki biznesowej i przepływów UI:**
+1. **Aktywność nawigacji uwarunkowanej rolą:** Sprawdzenie aktualnie zalogowanej sesji i dynamiczne ukrywanie lub pokazywanie modułów (np. ukrywanie przycisku "Dodaj Wydarzenie" dla zwykłych zawodników).
+2. **Aktywność walidacji formularza wydarzenia:** Wypełnianie pól -> weryfikacja na poziomie klienta (HTML5) -> przesłanie pakietu -> głęboka weryfikacja na poziomie serwera (np. czy data nie jest z przeszłości).
+3. **Aktywność kontroli zajętości miejsc:** Zawodnik klika przycisk -> aplikacja przelicza stosunek `zapisani/pojemność` -> decyduje o dołączeniu zawodnika lub odrzuceniu z odpowiednim komunikatem.
+4. **Aktywność cyklu życia wydarzenia sportowego:** Od etapu wstępnego utworzenia (szkic), poprzez proces otwartości na zapisy, aż po zakończenie zawodów.
+5. **Aktywność obsługi logowania błędnego:** Użytkownik podaje złe dane -> weryfikacja negatywna -> powrót na stronę logowania z błędem walidacji bez utraty poprzednio wpisanego e-maila.
+6. **Aktywność rezygnacji i zwalniania blokad:** Decyzja zawodnika o wycofaniu -> wykonanie skryptu backendowego usuwającego powiązanie -> zaktualizowanie licznika miejsc dla innych chętnych.
+7. **Aktywność modyfikacji kont użytkowników:** Wyszukanie odpowiedniego konta przez administratora w widoku tabelarycznym -> wybór nowej wartości z listy rozwijanej -> zapis i potwierdzenie.
+8. **Aktywność generowania powiadomień błyskawicznych (Flash Messages):** Wykonanie określonej logiki biznesowej (np. sukces edycji) -> wstrzyknięcie wiadomości do sesji -> renderowanie alertu na froncie -> zniszczenie komunikatu po jednym wyświetleniu.
+9. **Aktywność rejestracji użytkownika:** Od otwarcia formularza rejestracyjnego, przez uzupełnienie danych zgodnych z wyrażeniami regularnymi, aż do automatycznego zalogowania po poprawnym założeniu konta.
+10. **Aktywność filtrowania i sortowania wydarzeń:** Manipulacja parametrami po stronie użytkownika w celu odnalezienia konkretnych zawodów sportowych w systemie.
 
 *Poniżej zamieszczono 1 wybrany diagram dla procesu: Nawigacja po dashboardzie.*
 ![Diagram Aktywności](img/diagram_aktywnosci.png)
 
 ## 12. Diagramy Stanów [SŻ]
-**Zidentyfikowane w systemie stany dla obiektów:**
-1. Rejestracja zawodnika (Oczekująca, Zatwierdzona, Odrzucona).
-2. Wydarzenie sportowe (Szkic, Aktywne, Zakończone).
-3. Konto użytkownika (Niezweryfikowane, Aktywne, Zablokowane).
+**Zidentyfikowane w systemie stany dla obiektów oraz ich cykle życia:**
+1. **Stan Konta Użytkownika:** [Utworzone] -> [Aktywne] -> [Zablokowane/Zbanowane przez Administratora] -> [Skasowane].
+2. **Stan Wydarzenia Sportowego:** [Skonfigurowane] -> [Dostępne do Zapisów] -> [Zablokowane (brak miejsc)] -> [Odblokowane (ktoś zrezygnował)] -> [Zakończone].
+3. **Stan Rekordu Rejestracji (Pivot):** [Wykonywana / Oczekująca na zatwierdzenie] -> [Aktywna (Zawodnik na liście)] -> [Anulowana (Przez zawodnika)].
+4. **Stan Sesji HTTP Użytkownika:** [Nieustalona] -> [Zainicjowana (Zalogowany)] -> [Wygasła (Idle Timeout)] -> [Wyzerowana (Wylogowany)].
+5. **Stan Formularza Wprowadzania Danych:** [Pusty (Czysty widok)] -> [W Trakcie Edycji] -> [Zawierający Błędy Walidacji] -> [Zatwierdzony].
+6. **Stan Limitów Miejsc (Pojemność):** [Pełna Dostępność] -> [Dostępność Częściowa] -> [Pojemność Wyczerpana (Limit osiągnięty)].
+7. **Stan Filtra Autoryzacji (Middleware):** [Oczekujący na Żądanie] -> [Przetwarzający Użytkownika] -> [Dostęp Przyznany] / [Dostęp Odrzucony (403)].
+8. **Stan Modelu ORM (Bazy Danych):** [Nowa Instancja] -> [Zabrudzona (Dirty - edytowana w pamięci)] -> [Zsynchronizowana z Bazą].
+9. **Stan Żądania HTTP (Request):** [Odebrane przez Serwer WWW] -> [Rozpoznane przez Router] -> [Obsłużone] -> [Zwrócone (Response)].
+10. **Stan Połączenia Bazodanowego:** [Brak Połączenia] -> [Aktywne Połączenie] -> [W Trakcie Transakcji (Transaction)] -> [Zatwierdzone (Commit)] / [Zrolowane (Rollback)].
 
 *Poniżej zamieszczono 1 wybrany diagram dla obiektu: Rejestracja zawodnika.*
 ![Diagram Stanów](img/diagram_stanow.png)
 
 ## 13. Dokumentacja bezpieczeństwa (Opis teoretyczny) [SŻ]
-* **Secure by Design:** System od samego początku projektowany jest z myślą o unikaniu luk bezpieczeństwa. Wymuszone jest wiązanie parametrów (Parameter Binding) przy kontakcie z bazą, co chroni przed SQL Injection. Hasła nigdy nie są przetrzymywane w tekście jawnym.
-* **Zero Trust:** System operuje na zasadzie całkowitego braku zaufania. Każde, nawet najmniejsze żądanie HTTP musi zostać zweryfikowane pod kątem tożsamości żądającego i przypisanej mu roli. 
-* **Privacy by Design:** Zgodnie z zasadą minimalizacji danych, aplikacja gromadzi wyłącznie dane absolutnie niezbędne do działania (imię/pseudonim i adres e-mail).
+System został zaprojektowany z rygorystycznym uwzględnieniem standardów bezpieczeństwa webowego.
+
+* **Kryptografia i ochrona haseł (Sól i Pieprz):** System nie przechowuje haseł w postaci jawnej. Zastosowano mechanizm podwójnego zabezpieczenia. **Sól (Salt)** to unikalny, losowo generowany ciąg znaków przypisywany i doklejany do każdego hasła, co całkowicie chroni przed atakami typu "Rainbow Tables" (tablice tęczowe). Z kolei **Pieprz (Pepper)** to tajny, globalny klucz kryptograficzny współdzielony przez całą aplikację. Aplikuje się go do hasła jeszcze przed procesem hashowania, a sam klucz ukryty jest bezpiecznie na serwerze i nigdy nie trafia do bazy danych.
+* **Bezpieczeństwo transmisji danych (SSL/TLS):** Cały ruch sieciowy w aplikacji podlega bezwzględnemu szyfrowaniu w tranzycie (Encryption in Transit). Koncepcyjnie wymuszony jest protokół HTTPS, co uniemożliwia podsłuchiwanie i przechwytywanie danych (np. ataki Man-in-the-Middle) przesyłanych między urządzeniem zawodnika a serwerem.
+* **Secure by Design:** Architektura od samego początku wymusza użycie mechanizmu wiązania parametrów (Parameter Binding/Prepared Statements) przy każdym kontakcie z bazą, co stanowi natywną zaporę przed złośliwymi atakami SQL Injection. 
+* **Zero Trust:** System operuje na zasadzie absolutnego braku zaufania. Każda, nawet najmniejsza próba dostępu do zasobu w systemie jest poddawana głębokiej weryfikacji tożsamości (Authentication) oraz restrykcyjnemu sprawdzeniu ról (Authorization).
+* **Privacy by Design:** Aplikacja gromadzi wyłącznie minimalny, niezbędny do funkcjonowania logiki biznesowej zestaw danych (adres e-mail, pseudonim/imię), redukując ryzyko przy ewentualnym wycieku danych.
 
 ## 14. Dostępność (WCAG) [SŻ]
-Aplikacja wspiera standard WCAG 2.1. Zastosowano semantyczny kod HTML5, znaczniki `aria-label` oraz zapewniono wysoki kontrast elementów interaktywnych (przycisków). Aplikację można w pełni obsługiwać za pomocą klawiatury (klawisz Tab).
+System został zaprojektowany z myślą o pełnej dostępności cyfrowej dla osób z dysfunkcjami (wzroku, słuchu, koordynacji ruchowej). **Zadeklarowano pełną zgodność ze standardem WCAG 2.1 na poziomie AA.**
+
+Aby spełnić rygorystyczne wymagania tego poziomu, zespół programistów Front-End ma obowiązek stosować się do następujących wytycznych technicznych podczas tworzenia widoków aplikacji:
+1. **Wymogi wizualne i kontrast (Wymóg poziomu AA):** Interfejs graficzny musi zapewniać minimalny współczynnik kontrastu tekstu do tła wynoszący `4.5:1` dla tekstu standardowego oraz `3:1` dla tekstu nagłówkowego. Programiści mają obowiązek weryfikować paletę barw na każdym etapie prac za pomocą zautomatyzowanych narzędzi typu WAVE (Web Accessibility Evaluation Tool) lub Google Lighthouse.
+2. **Pełna nawigacja klawiaturowa:** Cała aplikacja musi być w 100% obsługiwalna z poziomu samej klawiatury (bez użycia myszy). Wymagane jest zachowanie naturalnego porządku przeskakiwania (DOM order / atrybut `tabindex`) oraz wyraźne, wizualne oznaczanie aktualnie wybranego elementu interaktywnego przy użyciu pseudoklasy CSS `:focus` (np. pogrubiony obrys wokół przycisków formularzy). Należy rygorystycznie unikać tzw. "pułapek klawiaturowych".
+3. **Optymalizacja pod czytniki ekranu (Screen Readers):** Kod widoków HTML (pliki `.blade.php`) musi bezwzględnie opierać się na poprawnej semantyce HTML5 (użycie strukturalnych znaczników `<header>`, `<main>`, `<nav>`, `<article>`). Dla przycisków i elementów czysto wizualnych nieposiadających własnego tekstu (np. ikona kosza na śmieci, ikona zamykania "X") należy stosować opisowe atrybuty `aria-label`. Z kolei grafiki pełniące wyłącznie funkcję dekoracyjną muszą być ukrywane przed czytnikami za pomocą `aria-hidden="true"`.
+4. **Elastyczność i skalowanie interfejsu:** Layout oparty na frameworku CSS musi być zaimplementowany elastycznie (Flexbox/Grid), aby powiększenie widoku strony w przeglądarce do 200% nie spowodowało obcięcia tekstu, nałożenia się elementów interfejsu na siebie ani utraty jakiejkolwiek funkcjonalności.
 
 ## 15. Diagram Klas [SŻ]
-![Diagram Klas](img/diagram_klas.png)
+**Zidentyfikowane w systemie klasy, modele i komponenty oprogramowania:**
+1. **Klasa `User` (Model):** Reprezentuje byt uczestnika, hermetyzuje dane tożsamości, hasła oraz zarządza relacją One-to-Many i Many-to-Many.
+2. **Klasa `Event` (Model):** Hermetyzuje parametry zawodów sportowych (termin, capacity). Zawiera logikę biznesową wyliczania dostępnych miejsc startowych.
+3. **Klasa `Registration` (Model Pivot):** Tabela łącząca, reprezentująca relację pomiędzy klasą `User` a klasą `Event` w kontekście przynależności i historii zapisu.
+4. **Klasa `EventController`:** Kontroler warstwy MVC, przyjmujący żądania od użytkownika i delegujący zadania tworzenia/wyświetlania/usuwania do modelu `Event`.
+5. **Klasa `AdminController`:** Wydzielona klasa odpowiedzialna wyłącznie za logikę nadawania i odbierania uprawnień administracyjnych poszczególnym kontom.
+6. **Klasa `AuthController`:** Kontroler uwierzytelniania, zarządzający cyklem logowania, rejestracji oraz weryfikacji tożsamości użytkowników przy użyciu fasady `Auth`.
+7. **Klasa `RoleMiddleware`:** Element warstwy ochronnej. Klasa posiadająca metodę `handle()`, weryfikująca pole `role` względem żądanego adresu URL.
+8. **Klasa `StoreEventRequest`:** Klasa wyciągająca zasady walidacji (Validation Rules) na zewnątrz kontrolera, upewniająca się m.in., że pole pojemności jest liczbą całkowitą dodatnią.
+9. **Klasa `DatabaseSeeder`:** Klasa techniczna, odpowiedzialna za wstrzyknięcie zautomatyzowanych, testowych danych do środowiska (tworzenie domyślnego konta Admina i testowych biegów).
+10. **Klasa `Kernel` (HTTP):** Główne jądro aplikacji backendowej, rejestrujące konfigurację tras, middleware i sterujące cyklem życia każdego przychodzącego żądania HTTP.
+
+*Poniżej zamieszczono schemat dla najważniejszych klas systemowych.*
+![Diagram Klas](img/diagram_klas2.png)
+
 
 ## 16. Kod SQL [SŻ]
 **a) Standard SQL do tworzenia modelu bazy:**
@@ -163,38 +246,79 @@ class EventTest extends TestCase
 ![Wynik testów PHPUnit](img/testy_konsola.png)
 
 ## 19. Diagram Komponentów i Wdrożenia [SŻ]
+**Zidentyfikowane węzły (Nodes) i środowiska wdrożeniowe:**
+1. **Urządzenie Użytkownika (Klient):** Dowolny sprzęt (PC, smartfon) z nowoczesną przeglądarką internetową. Nie wymaga instalacji dodatkowego oprogramowania, renderuje widoki przesyłane z serwera.
+2. **Środowisko Deweloperskie (Lokalne):** Maszyna programisty z zainstalowanym pakietem (np. XAMPP/Docker), na której uruchamiany jest serwer wbudowany PHP oraz lokalna instancja bazy danych. Służy do pisania kodu i weryfikacji testów.
+3. **Serwer Produkcyjny (Wersja Live / VPS):** Główny węzeł wdrożeniowy działający pod kontrolą systemu Linux (np. Ubuntu 22.04 LTS). Zawiera serwer WWW Nginx, procesor PHP-FPM oraz produkcyjną, zabezpieczoną bazę MySQL 8.0.
+
+**Zidentyfikowane kluczowe komponenty aplikacji:**
+1. **Komponent Front-Endowy:** Skompilowane widoki Blade wspomagane przez bibliotekę Tailwind CSS, odpowiedzialne za UI/UX.
+2. **Komponent Back-Endowy:** Logika aplikacji w frameworku Laravel (Kontrolery, Modele, Middleware), przetwarzająca żądania HTTP.
+3. **Komponent Bazy Danych:** Silnik relacyjny utrzymujący trwały stan aplikacji.
+
+*Poniżej zamieszczono schematy architektury.*
+
 **Diagram Komponentów:**
 ![Diagram Komponentów](img/diagram_komponentow.png)
 
 **Diagram Wdrożenia:**
 ![Diagram Wdrożenia](img/diagram_wdrozenia.png)
 
-## 20. Instalacja i konfiguracja CI/CD [SŻ]
-System korzysta z GitHub Actions do automatycznego testowania kodu (Continuous Integration).
-**Plik .github/workflows/tests.yml:**
-```yaml
-name: Laravel Tests
-on: [push, pull_request]
-jobs:
-  test:
-    runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@v3
-    - name: Setup PHP
-      uses: shivammathur/setup-php@v2
-      with:
-        php-version: '8.2'
-    - name: Install Dependencies
-      run: composer install -q --no-ansi --no-interaction --no-scripts --no-progress --prefer-dist
-    - name: Execute tests via PHPUnit
-      run: vendor/bin/phpunit
-```
-**Konfiguracja:** W środowisku deweloperskim uruchomienie następuje poprzez `composer install`, `npm install && npm run build`, `php artisan migrate` oraz włączenie serwera komendą `php artisan serve`.
 
-## 21. Implementacja bezpieczeństwa w praktyce [SŻ]
-Planowane mechanizmy zrealizowano za pomocą wbudowanych narzędzi frameworka:
-* **Secure by Design:** Hasła przed zapisem są solone i hashowane wbudowanym algorytmem `Bcrypt`. Zastosowano ORM Eloquent korzystający pod maską z PDO.
-* **Zero Trust (Praktyka):** Zbudowano niestandardowy komponent `RoleMiddleware.php`. Mechanizm ten wyłapuje każde żądanie HTTP, wyciąga obiekt zalogowanego użytkownika (`auth()->user()`) i sprawdza zawartość kolumny `role`. Jeśli zwykły Zawodnik wyśle sztuczne żądanie np. `POST /events` (przez Postmana), Middleware natychmiast zablokuje operację (Błąd 403 - Forbidden).
+## 20. Instalacja i konfiguracja CI/CD [SŻ]
+
+### 20a. Instrukcja instalacji (Środowisko deweloperskie)
+Aby nowy programista mógł uruchomić projekt lokalnie, musi posiadać zainstalowane środowisko PHP (min. 8.2), Composer, Node.js oraz MySQL. Proces uruchomienia projektu składa się z następujących kroków:
+1. Sklonowanie repozytorium z systemu kontroli wersji: `git clone https://github.com/SebZak00/sws-projekt.git`
+2. Pobranie i instalacja zależności backendowych (PHP): `composer install`
+3. Pobranie i kompilacja zależności frontendowych (CSS/JS): `npm install && npm run build`
+4. Utworzenie pliku środowiskowego i konfiguracja połączenia z bazą: `cp .env.example .env` (należy uzupełnić dane `DB_HOST`, `DB_PORT`, `DB_DATABASE`).
+5. Wygenerowanie unikalnego klucza kryptograficznego aplikacji: `php artisan key:generate`
+6. Odbudowa struktury bazy danych wraz z wstrzyknięciem testowych kont i wydarzeń: `php artisan migrate --seed`
+7. Uruchomienie lokalnego serwera deweloperskiego: `php artisan serve`
+
+### 20b. Architektura CI/CD i Wersja Live
+Projekt wykorzystuje nowoczesne podejście automatyzacji potoków wdrożeniowych przy użyciu **GitHub Actions**.
+
+* **Continuous Integration (CI):** Każdy *Push* lub *Pull Request* do głównej gałęzi kodu uruchamia wirtualną maszynę (Ubuntu) na serwerach GitHub. Maszyna ta pobiera kod, buduje środowisko, a następnie automatycznie uruchamia wszystkie testy jednostkowe. Zapobiega to wdrożeniu zepsutego kodu.
+
+  **Plik konfiguracyjny potoku testowego (.github/workflows/tests.yml):**
+  ```yaml
+  name: Laravel Tests
+  on: [push, pull_request]
+  jobs:
+    test:
+      runs-on: ubuntu-latest
+      steps:
+      - uses: actions/checkout@v3
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+      - name: Install Dependencies
+        run: composer install -q --no-ansi --no-interaction --no-scripts --no-progress --prefer-dist
+      - name: Execute tests via PHPUnit
+        run: vendor/bin/phpunit
+  ```
+
+* **Continuous Deployment (CD) - Wdrażanie Live:** W przypadku, gdy testy (CI) zakończą się zielonym statusem "PASS", uruchamiany jest drugi etap potoku. GitHub Actions loguje się na produkcyjny serwer VPS po bezpiecznym protokole SSH (korzystając z certyfikatów ukrytych w *GitHub Secrets*). Następnie wykonuje skrypt wdrożeniowy na serwerze:
+  1. Zaciągnięcie najnowszego kodu: `git pull origin main`
+  2. Optymalizacja zależności: `composer install --optimize-autoloader --no-dev`
+  3. Bezpieczna migracja bazy danych: `php artisan migrate --force`
+  
+  Dzięki temu Wersja Live na serwerze aktualizuje się całkowicie bezdotykowo w zaledwie kilka sekund po zaakceptowaniu kodu.
+
+## 21. Implementacja bezpieczeństwa w praktyce (Wytyczne dla programistów) [SŻ]
+Zespół deweloperski ma obowiązek wdrożyć mechanizmy bezpieczeństwa ściśle według poniższych instrukcji technicznych:
+
+* **Wdrożenie Soli i Pieprzu (Peppering & Salting):**
+  Do hashowania haseł programista musi użyć wbudowanego we framework algorytmu `Bcrypt` (korzystając z fasady `Hash::make()`), który automatycznie generuje i aplikuje unikalną Sól. Dodatkowo programista musi zaimplementować mechanizm Pieprzu. W pliku konfiguracyjnym `.env` na serwerze produkcyjnym należy zdefiniować silną zmienną środowiskową, np. `APP_PEPPER=TajnyKlucz123!`. Przed wysłaniem hasła z formularza rejestracji do funkcji hashującej, programista łączy je z pieprzem za pomocą algorytmu HMAC:
+  `$pepperedPassword = hash_hmac('sha256', $request->password, env('APP_PEPPER'));`
+  `$user->password = Hash::make($pepperedPassword);`
+* **Wdrożenie certyfikatu SSL (Wymuszenie HTTPS):**
+  Na środowisku produkcyjnym (serwer VPS) administrator DevOps zobowiązany jest wygenerować i zainstalować darmowy certyfikat SSL, wykorzystując narzędzie `Certbot` (od Let's Encrypt). W konfiguracji serwera webowego (Nginx) należy dodać dyrektywę bezwarunkowego przekierowania całego ruchu z portu 80 (HTTP) na port 443 (HTTPS) stosując kod HTTP 301. Zmienna `APP_URL` w pliku `.env` musi koniecznie przyjmować prefiks `https://`. Aby uniknąć problemu *Mixed Content*, w metodzie `boot()` pliku `AppServiceProvider` programista musi wymusić szyfrowanie linków komendą `URL::forceScheme('https');`.
+* **Zero Trust (Praktyczna Kontrola Dostępu - RBAC):**
+  Wymagane jest zarejestrowanie w jądrze aplikacji (Kernel) niestandardowego komponentu `RoleMiddleware.php`. Oprogramowany mechanizm wyłapuje każde żądanie HTTP, pobiera obiekt autoryzowanej sesji (`auth()->user()`) i ewaluuje zawartość kolumny `role`. Jeśli użytkownik o randze "Zawodnik" spróbuje wysłać celowo zmanipulowane żądanie do zastrzeżonego endpointu (np. wysyłając `POST /events` przez narzędzie Postman), Middleware ma natychmiast przerwać procesowanie żądania i wygenerować standardową odpowiedź błędu `403 - Forbidden`.
 
 ## 22. Podręcznik Użytkownika [SŻ]
 **Spis treści całego podręcznika:**

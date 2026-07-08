@@ -19,7 +19,9 @@ test('password can be updated', function () {
         ->assertSessionHasNoErrors()
         ->assertRedirect('/profile');
 
-    $this->assertTrue(Hash::check('new-password', $user->refresh()->password));
+    $pepper = env('APP_PEPPER', 'SWSklucz2026!@');
+        $pepperedPassword = hash_hmac('sha256', 'new-password', $pepper);
+        $this->assertTrue(Hash::check($pepperedPassword, $user->refresh()->password));
 });
 
 test('correct password must be provided to update password', function () {

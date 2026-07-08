@@ -13,15 +13,24 @@ class PasswordController extends Controller
     /**
      * Update the user's password.
      */
-    public function update(Request $request): RedirectResponse
+   public function update(Request $request): RedirectResponse
     {
         $validated = $request->validateWithBag('updatePassword', [
-            'current_password' => ['required', 'current_password'],
-            'password' => ['required', Password::defaults(), 'confirmed'],
+            'current_password' => ['required', function ($attribute, $value, $fail) use ($request) {
+                $pepper = env('APP_PEPPER');
+                $pepperedPassword = hash_hmac('sha256', $value, $pepper);
+                if (!\Illuminate\Support\Facades\Hash::check($pepperedPassword, $request->user()->password)) {
+                    $fail(__('The provided password does not match your current password.'));
+                }
+            }],
+            'password' => ['required', \Illuminate\Validation\Rules\Password::defaults(), 'confirmed'],
         ]);
 
+        $pepper = env('APP_PEPPER');
+        $pepperedNewPassword = hash_hmac('sha256', $validated['password'], $pepper);
+
         $request->user()->update([
-            'password' => Hash::make($validated['password']),
+            'password' => \Illuminate\Support\Facades\Hash::make($pepperedNewPassword),
         ]);
 
         return back()->with('status', 'password-updated');
