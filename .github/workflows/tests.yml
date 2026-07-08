@@ -15,9 +15,9 @@ jobs:
       run: composer install -q --no-ansi --no-interaction --no-scripts --no-progress --prefer-dist
     - name: Generate key
       run: php artisan key:generate
-    - name: Execute tests via PHPUnit
+    - name: Execute tests via Pest
       env:
         DB_CONNECTION: sqlite
         DB_DATABASE: ":memory:"
         APP_PEPPER: "SWSklucz2026!@"
-      run: vendor/bin/phpunit
+      run: vendor/bin/pest
