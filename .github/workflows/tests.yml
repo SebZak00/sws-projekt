@@ -20,4 +20,6 @@ jobs:
         DB_CONNECTION: sqlite
         DB_DATABASE: ":memory:"
         APP_PEPPER: "SWSklucz2026!@"
+        APP_KEY: "base64:CL4wUbivIjaypOMjDYB4sNsl5KcgBGdDTwLGeWYRXnU="
+
       run: vendor/bin/pest
