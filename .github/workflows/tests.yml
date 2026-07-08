@@ -27,6 +27,6 @@ jobs:
       env:
         DB_CONNECTION: sqlite
         DB_DATABASE: ":memory:"
-        APP_PEPPER: "SWSklucz2026!@"
-        APP_KEY: "base64:CL4wUbivIjaypOMjDYB4sNsl5KcgBGdDTwLGeWYRXnU="
+        APP_PEPPER: ${{ secrets.APP_PEPPER }}
+        APP_KEY: ${{ secrets.APP_KEY }}
       run: vendor/bin/pest
