@@ -34,3 +34,12 @@ Route::middleware('auth')->group(function () {
 });
 
 require __DIR__.'/auth.php';
+
+use Illuminate\Support\Facades\Artisan;
+
+Route::get('/tajny-setup-bazy', function () {
+    // Odpalamy migrację w tle z poziomu kodu
+    Artisan::call('migrate', ['--force' => true]);
+    
+    return 'Baza danych została poprawnie zbudowana! <a href="/">Wróć na stronę główną</a>';
+});
