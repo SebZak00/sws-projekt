@@ -36,10 +36,36 @@ Route::middleware('auth')->group(function () {
 require __DIR__.'/auth.php';
 
 use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\Hash;
+use App\Models\User;
 
 Route::get('/tajny-setup-bazy', function () {
-    // Odpalamy migrację w tle z poziomu kodu
-    Artisan::call('migrate', ['--force' => true]);
-    
-    return 'Baza danych została poprawnie zbudowana! <a href="/">Wróć na stronę główną</a>';
+    // 1. migrate:fresh usuwa stare tabele i tworzy je od nowa na czysto
+    Artisan::call('migrate:fresh', ['--force' => true]);
+
+    // 2. Tworzenie Administratora
+    User::create([
+        'name' => 'Szef Admin',
+        'email' => 'admin@test.com',
+        'password' => Hash::make('Haslo123!'), // Dostosuj hasło, jeśli masz restrykcyjne reguły (np. nasz pepper)
+        'role' => 'admin',
+    ]);
+
+    // 3. Tworzenie Organizatora
+    User::create([
+        'name' => 'Jan Organizator',
+        'email' => 'organizator@test.com',
+        'password' => Hash::make('Haslo123!'),
+        'role' => 'organizator',
+    ]);
+
+    // 4. Tworzenie Uczestnika
+    User::create([
+        'name' => 'Zwykły Uczestnik',
+        'email' => 'uczestnik@test.com',
+        'password' => Hash::make('Haslo123!'),
+        'role' => 'uzytkownik',
+    ]);
+
+    return 'Baza zresetowana na czysto! Gotowe do testów konta: admin@test.com, organizator@test.com, uczestnik@test.com (hasło do wszystkich to: Haslo123!)';
 });
