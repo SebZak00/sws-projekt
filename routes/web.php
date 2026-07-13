@@ -45,27 +45,27 @@ Route::get('/tajny-setup-bazy', function () {
 
     // 2. Tworzenie Administratora
     User::create([
-        'name' => 'Szef Admin',
-        'email' => 'admin@test.com',
-        'password' => Hash::make('Haslo123!'), // Dostosuj hasło, jeśli masz restrykcyjne reguły (np. nasz pepper)
+        'name' => 'Admin',
+        'email' => 'admin@email.com',
+        'password' => Hash::make('Projekt123!@#'), // Dostosuj hasło, jeśli masz restrykcyjne reguły (np. nasz pepper)
         'role' => 'admin',
     ]);
 
     // 3. Tworzenie Organizatora
     User::create([
-        'name' => 'Jan Organizator',
-        'email' => 'organizator@test.com',
-        'password' => Hash::make('Haslo123!'),
+        'name' => 'Organizator',
+        'email' => 'organizator@email.com',
+        'password' => Hash::make('Projekt123!@#'),
         'role' => 'organizator',
     ]);
 
     // 4. Tworzenie Uczestnika
     User::create([
-        'name' => 'Zwykły Uczestnik',
-        'email' => 'uczestnik@test.com',
-        'password' => Hash::make('Haslo123!'),
+        'name' => 'Uczestnik',
+        'email' => 'uczestnik@email.com',
+        'password' => Hash::make('Projekt123!@#'),
         'role' => 'uzytkownik',
     ]);
 
-    return 'Baza zresetowana na czysto! Gotowe do testów konta: admin@test.com, organizator@test.com, uczestnik@test.com (hasło do wszystkich to: Haslo123!)';
+    return 'Baza zresetowana na czysto!';
 });
