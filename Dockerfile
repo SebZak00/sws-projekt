@@ -34,4 +34,5 @@ RUN npm install && npm run build
 RUN chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache
 
 RUN touch database/database.sqlite
-RUN chown www-data:www-data database/database.sqlite
+RUN touch database/database.sqlite
+RUN chown -R www-data:www-data database
