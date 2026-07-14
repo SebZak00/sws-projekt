@@ -40,32 +40,35 @@ use Illuminate\Support\Facades\Hash;
 use App\Models\User;
 
 Route::get('/tajny-setup-bazy', function () {
-    // 1. migrate:fresh usuwa stare tabele i tworzy je od nowa na czysto
     Artisan::call('migrate:fresh', ['--force' => true]);
 
-    // 2. Tworzenie Administratora
+    // Odwzorowanie Twojego bezpiecznego mechanizmu pieprzenia hasła
+    $pepper = env('APP_PEPPER');
+    $pepperedPassword = hash_hmac('sha256', 'Projekt123!@#', $pepper);
+
+    // 1. Tworzenie Administratora
     User::create([
         'name' => 'Admin',
         'email' => 'admin@email.com',
-        'password' => Hash::make('Projekt123!@#'), // Dostosuj hasło, jeśli masz restrykcyjne reguły (np. nasz pepper)
+        'password' => Hash::make($pepperedPassword),
         'role' => 'admin',
     ]);
 
-    // 3. Tworzenie Organizatora
+    // 2. Tworzenie Organizatora
     User::create([
         'name' => 'Organizator',
         'email' => 'organizator@email.com',
-        'password' => Hash::make('Projekt123!@#'),
+        'password' => Hash::make($pepperedPassword),
         'role' => 'organizator',
     ]);
 
-    // 4. Tworzenie Uczestnika
+    // 3. Tworzenie Uczestnika
     User::create([
         'name' => 'Uczestnik',
         'email' => 'uczestnik@email.com',
-        'password' => Hash::make('Projekt123!@#'),
+        'password' => Hash::make($pepperedPassword),
         'role' => 'uzytkownik',
     ]);
 
-    return 'Baza zresetowana na czysto!';
+    return 'Baza zresetowana na czysto! Gotowe do testów konta: admin, organizator, uczestnik';
 });
